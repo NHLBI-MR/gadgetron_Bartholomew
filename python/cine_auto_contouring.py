@@ -19,7 +19,7 @@ from scipy.spatial import ConvexHull
 #########hard-coded variables -- we could pass these in #######################
 ###############################################################################
 ### location of model files
-model_fname = "/home/gtuser/segment_dwfn/model_files/FCN_sa" 
+model_fname = os.env("GADGETRON_HOME")+"/FCN_sa" 
 ###
 
 ### whether the images are flipped (updisde-down and left-to-right) from the 'normal' orientation
@@ -32,7 +32,7 @@ intensity_percentile_to_saturate = 95
 
 ### choose True if segmented images should be written to a local file -- useful for debugging###
 write_out_debug_images = False
-dirname_out='/tmp/test_op/'
+dirname_out='/tmp'
 ###
 ###############################################################################
 ###############################################################################
