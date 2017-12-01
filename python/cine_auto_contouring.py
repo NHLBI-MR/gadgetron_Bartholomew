@@ -19,7 +19,7 @@ from scipy.spatial import ConvexHull
 #########hard-coded variables -- we could pass these in #######################
 ###############################################################################
 ### location of model files
-model_fname = os.env("GADGETRON_HOME")+"/FCN_sa" 
+model_fname = os.env("GADGETRON_HOME")+"/share/gadgetron/python/FCN_sa" 
 ###
 
 ### whether the images are flipped (updisde-down and left-to-right) from the 'normal' orientation
