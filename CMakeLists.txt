@@ -258,6 +258,7 @@ if (PYTHONLIBS_FOUND)
 
     install(FILES
         ${gadgetron_Bartholomew_python_gadgets_files}
+	python/FCN_sa.index python/FCN_sa.meta python/FCN_sa.data-00000-of-00001
         DESTINATION ${GADGETRON_INSTALL_PYTHON_MODULE_PATH} COMPONENT main)
 
     # add the demo
