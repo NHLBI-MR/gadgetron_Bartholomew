@@ -43,7 +43,7 @@ class CineContouring(Gadget):
 
         print("CineContouring, number of retro-gated phases ", self.phs_retro)
                                                                                         
-        def process(self, header, image, metadata=None):
+    def process(self, header, image, metadata=None):
         print("Receiving image__+_, phase ", header.phase, ", slice ", header.slice)
 
         # buffer incoming images
