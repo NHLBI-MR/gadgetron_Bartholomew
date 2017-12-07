@@ -251,7 +251,9 @@ if (PYTHONLIBS_FOUND)
     # install python gadgets
     set(gadgetron_Bartholomew_python_gadgets_files 
             python/cine_auto_contouring.py 
-            python/IsmrmredImageArray_cine_auto_contouring.py 
+            python/IsmrmredImageArray_cine_auto_contouring.py
+	    python/segmentation_settings.py
+	    python/segmentation_tools.py
         )
 
     source_group(gadgets FILES ${gadgetron_Bartholomew_python_gadgets_files})

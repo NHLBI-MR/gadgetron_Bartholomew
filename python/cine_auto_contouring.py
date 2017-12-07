@@ -34,6 +34,15 @@ class CineContouring(Gadget):
 
         print("CineContouring, maximal number of slice ", self.slc)
 
+        n = len(self.header.userParameters.userParameterLong)
+        for kk in range(0, n-1):
+            ss = self.header.userParameters.userParameterLong[kk].content()
+            if ss[0] == 'RetroGatedImages':
+                print('Found retro phase from xml protocol', ss[1])
+                self.phs_retro = ss[1]
+
+        print("CineContouring, number of retro-gated phases ", self.phs_retro)
+                                                                                        
     def process(self, header, image, metadata=None):
 
         print("Receiving image__+_, phase ", header.phase, ", slice ", header.slice)
@@ -71,7 +80,7 @@ class CineContouring(Gadget):
 	self.metas= add_contours_to_headers (self.metas, ctr_endo_x_list, ctr_endo_x_list, ctr_epi_x_list, ctr_epi_x_list)
 
 	for i in range(0,len(self.metas)):
-            self.headers[i].image_series_index += 100 
+            self.headers[i].image_series_index += 2000 
 	    self.put_next(self.headers[i],self.images[i],self.metas[i])
 
         return 0
