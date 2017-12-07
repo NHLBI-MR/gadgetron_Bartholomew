@@ -69,7 +69,7 @@ class CineContouring(Gadget):
         # send out the last image
         self.put_next(header,image,curr_meta)
 
-# enough images received
+	# enough images received
         print("Sufficient images are received ... ")
         print(len(self.headers))
 
