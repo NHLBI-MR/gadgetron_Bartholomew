@@ -5,7 +5,7 @@ model_fname = os.environ["GADGETRON_HOME"]+"/share/gadgetron/python/FCN_sa"
 ###
 
 ### whether the images are flipped (updisde-down and left-to-right) from the 'normal' orientation
-flipped_images = True
+flipped_images = False
 ###
 
 ### the percentile above which intensity values are saturated -- 99% works well for DICOM images at Barts, but seems to be closer to 95% on the h5 images I used at NIH
