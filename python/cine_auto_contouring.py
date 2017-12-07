@@ -10,7 +10,7 @@ if not hasattr(sys, 'argv'):
     sys.argv  = ['']
 import tensorflow as tf
 import scipy as sp
-from auto_contouring import segment_all_images, put_contours_in_headers
+from segmentation_tools import segment_all_images, add_contours_to_headers
 
 class CineContouring(Gadget):
 
@@ -34,15 +34,6 @@ class CineContouring(Gadget):
 
         print("CineContouring, maximal number of slice ", self.slc)
 
-        n = len(self.header.userParameters.userParameterLong)
-        for kk in range(0, n-1):
-            ss = self.header.userParameters.userParameterLong[kk].content()
-            if ss[0] == 'RetroGatedImages':
-                print('Found retro phase from xml protocol', ss[1])
-                self.phs_retro = ss[1]
-
-        print("CineContouring, number of retro-gated phases ", self.phs_retro)
-        
     def process(self, header, image, metadata=None):
 
         print("Receiving image__+_, phase ", header.phase, ", slice ", header.slice)
@@ -69,7 +60,7 @@ class CineContouring(Gadget):
         # send out the last image
         self.put_next(header,image,curr_meta)
 
-	# enough images received
+        # enough images received
         print("Sufficient images are received ... ")
         print(len(self.headers))
 
@@ -77,12 +68,11 @@ class CineContouring(Gadget):
 	ctr_endo_x_list, ctr_endo_y_list, ctr_epi_x_list, ctr_epi_y_list, ctr_RV_x_list, ctr_RV_y_list = segment_all_images (self.images, pixel_spacing)
 
 	#write the contours to the meta data to allow export to ARGUS
-	self.metas= put_contours_in_headers (self.metas, ctr_endo_x_list, ctr_endo_x_list, ctr_epi_x_list, ctr_epi_x_list)
+	self.metas= add_contours_to_headers (self.metas, ctr_endo_x_list, ctr_endo_x_list, ctr_epi_x_list, ctr_epi_x_list)
 
 	for i in range(0,len(self.metas)):
             self.headers[i].image_series_index += 100 
 	    self.put_next(self.headers[i],self.images[i],self.metas[i])
-
 
         return 0
 
