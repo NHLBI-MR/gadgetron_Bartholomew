@@ -63,8 +63,8 @@ class CineContouring(Gadget):
 	if metadata is not None:
             # deserialize metadata
 	    curr_meta = ismrmrd.Meta.deserialize(metadata)
-	    curr_meta = add_contours_to_single_header (curr_meta, ctr_endo_x, ctr_endo_y, ctr_epi_x, ctr_epi_y)
-            self.metas.append(curr_meta)
+	    updated_meta = add_contours_to_single_header (curr_meta, ctr_endo_x, ctr_endo_y, ctr_epi_x, ctr_epi_y)
+            self.metas.append(updated_meta)
 
         # if all images are received
         if header.slice<self.slc-1 or header.phase<self.phs_retro-1:
@@ -73,6 +73,15 @@ class CineContouring(Gadget):
 
         # send out the last image
         self.put_next(header,image,curr_meta)
+
+	# send out copy of image without contour (will switch this to the front when I have more time)
+	for i in range(0,len(self.metas)):
+            self.headers[i].image_series_index += 2000 
+	    this_meta=self.metas[i]
+	    this_meta.pop('EPI')
+            this_meta.pop('ENDO')
+            self.put_next(self.headers[i],self.images[i],this_meta)
+
 
         # enough images received
         print("Sufficient images are received ... ")
