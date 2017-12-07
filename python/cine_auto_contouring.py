@@ -484,7 +484,7 @@ class CineContouring(Gadget):
 	    all_metas[i]['ENDO'] = endo_list
 	    all_metas[i]['EPI'] = epi_list
 
-            self.headers[i].image_series_index += 100 
+            self.headers[i].image_series_index += 2000 
 	    self.put_next(self.headers[i],self.images[i],all_metas[i])
 
         return 0
