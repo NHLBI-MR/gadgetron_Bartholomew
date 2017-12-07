@@ -16,19 +16,6 @@ from scipy.spatial import ConvexHull
 from scipy.ndimage.morphology import binary_fill_holes
 from segmentation_settings import segmentation_options
 
-def preprocess_images (sa_image, pixel_size):
-    """ preprocess each iimage in the list sa_image -- just resize at present"""
-    sz=pixel_size/1.8 
-    processed_images=[]
-    for i, img in enumerate(sa_image):
-	if segmentation_options['flipped_images']:
-	    img2 = np.flipud(np.fliplr(cv2.resize(img.copy(),(0,0),fx=sz,fy=sz)))
-        else:
-            img2 = cv2.resize(img.copy(),(0,0),fx=sz,fy=sz)
-        processed_images.append(normalise_intensity(img2, (1, segmentation_options['intensity_percentile_to_saturate'])))
-    
-    return processed_images
-
 
 def normalise_intensity(image, thres=(1.0, 99.0)):
     """ Rescale the image intensity to the range of [0, 1] -- from Wenjia's code """
@@ -40,42 +27,53 @@ def normalise_intensity(image, thres=(1.0, 99.0)):
     return image2
 
 
+def preprocess_images (sa_image, pixel_size):
+    """ preprocess each iimage in the list sa_image -- just resize at present"""
+    sz=pixel_size/1.8 
+    processed_images=[]
+    for i, img in enumerate(sa_image):
+	if segmentation_options['flipped_images']:
+	    img2 = np.flipud(np.fliplr(cv2.resize(img.copy(),(0,0),fx=sz,fy=sz)))
+        else:
+            img2 = cv2.resize(img.copy(),(0,0),fx=sz,fy=sz)
+        processed_images.append(normalise_intensity(img2, (1,segmentation_options['intensity_percentile_to_saturate'])))
+    return processed_images
 
-def segment_images (processed_images, weight_fn):
+
+class SegmentationModel(object):
+
+  def __init__(self, weight_fn):
+    self.session = tf.Session()
+    saver = tf.train.import_meta_graph(weight_fn+'.meta')
+    saver.restore(self.session, weight_fn)
+
+  def segment_image(self, image):
+    image=cv2.transpose(image)#146,194
+    #image = normalise_intensity(image, (1,99))
+    X, Y = image.shape[:2]#x 146
+    if image.ndim == 2:
+        image = np.expand_dims(image, axis=2)#146 194 1
+    X2, Y2 = int(math.ceil(X / 16.0)) * 16, int(math.ceil(Y / 16.0)) * 16#160,208
+    x_pre, y_pre = int((X2 - X) / 2), int((Y2 - Y) / 2)
+    x_post, y_post = (X2 - X) - x_pre, (Y2 - Y) - y_pre
+    image = np.pad(image, ((x_pre, x_post), (y_pre, y_post), (0, 0)), 'constant')#160,208,1
+    image = np.transpose(image, axes=(2, 0, 1)).astype(np.float32)#1,160,208
+    image = np.expand_dims(image, axis=-1)#1,160,208,1
+    
+    prob, pred = self.session.run(['prob:0', 'pred:0'],
+               feed_dict={'image:0': image, 'training:0': False})#1,160,208
+    
+    pred = np.transpose(pred, axes=(1, 2, 0))#160,208,1
+    pred = pred[x_pre:x_pre + X, y_pre:y_pre + Y]
+    return cv2.transpose(pred[:,:,0])
+
+
+def segment_images (processed_tensors, weight_fn):
     """ generate a list of processed_images  """
-    
-    with tf.Session() as sess:
-        #sess=tf.Session()
-        sess.run(tf.global_variables_initializer())
-    
-        saver = tf.train.import_meta_graph(weight_fn+'.meta')
-        saver.restore(sess, weight_fn)
-        segmentation_masks = []
-
-
-        for i in range(0,len(processed_images)):
-            image=processed_images[i]#194,146
-            image=cv2.transpose(image)#146,194
-            image = normalise_intensity(image, (1,99))
-            X, Y = image.shape[:2]#x 146
-            if image.ndim == 2:
-                image = np.expand_dims(image, axis=2)#146 194 1
-            X2, Y2 = int(math.ceil(X / 16.0)) * 16, int(math.ceil(Y / 16.0)) * 16#160,208
-            x_pre, y_pre = int((X2 - X) / 2), int((Y2 - Y) / 2)
-            x_post, y_post = (X2 - X) - x_pre, (Y2 - Y) - y_pre
-            image = np.pad(image, ((x_pre, x_post), (y_pre, y_post), (0, 0)), 'constant')#160,208,1
-            image = np.transpose(image, axes=(2, 0, 1)).astype(np.float32)#1,160,208
-            image = np.expand_dims(image, axis=-1)#1,160,208,1
-    
-            prob, pred = sess.run(['prob:0', 'pred:0'],
-                  feed_dict={'image:0': image, 'training:0': False})#1,160,208
-    
-            pred = np.transpose(pred, axes=(1, 2, 0))#160,208,1
-            pred = pred[x_pre:x_pre + X, y_pre:y_pre + Y]
-            segmentation_masks.append(cv2.transpose(pred[:,:,0]))
-
-    #plt.imshow(image[0,:,:,0]);plt.imshow(pred[0,:,:],alpha=0.5)
-    
+    segmentation_model = SegmentationModel(weight_fn)
+    segmentation_masks = []
+    for i in range(0,len(processed_tensors)):
+    	segmentation_masks.append(segmentation_model.segment_image(processed_tensors[i]))
     return segmentation_masks
 
 
