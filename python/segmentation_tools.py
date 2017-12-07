@@ -42,8 +42,9 @@ def preprocess_images (sa_image, pixel_size):
 
 class SegmentationModel(object):
 
-  def __init__(self, weight_fn):
+  def __init__(self):
     self.session = tf.Session()
+    weight_fn = segmentation_options['model_fname']
     saver = tf.train.import_meta_graph(weight_fn+'.meta')
     saver.restore(self.session, weight_fn)
 
@@ -68,9 +69,9 @@ class SegmentationModel(object):
     return cv2.transpose(pred[:,:,0])
 
 
-def segment_images (processed_tensors, weight_fn):
+def segment_images (processed_tensors):
     """ generate a list of processed_images  """
-    segmentation_model = SegmentationModel(weight_fn)
+    segmentation_model = SegmentationModel()
     segmentation_masks = []
     for i in range(0,len(processed_tensors)):
     	segmentation_masks.append(segmentation_model.segment_image(processed_tensors[i]))
@@ -439,6 +440,17 @@ def add_contours_to_headers (all_metas, ctr_endo_x_list, ctr_endo_y_list, ctr_ep
     return all_metas
 
 
+def add_contours_to_single_header (meta, ctr_endo_x, ctr_endo_y, ctr_epi_x, ctr_epi_y):
+    """ puts the epi- and endo-cardial contours into the header files ('metas') so that they can be sent to the appropriate dicom fields for display in ARGUS"""
+
+    endo_list = flatten_contours_to_argus_format (ctr_endo_x, ctr_endo_y)
+    epi_list = flatten_contours_to_argus_format (ctr_epi_x, ctr_epi_y)
+
+    meta['ENDO'] = endo_list
+    meta['EPI'] = epi_list
+
+    return meta
+
 
 def segment_all_images (images, pixel_spacing):
     """ master function to segment all images in the list 'images' """
@@ -454,7 +466,7 @@ def segment_all_images (images, pixel_spacing):
 
 
     print("segmenting images")
-    segmentation_masks = segment_images (processed_images, segmentation_options['model_fname'])
+    segmentation_masks = segment_images (processed_images)
 
     print("postprocessing images")
     ctr_endo_x_list, ctr_endo_y_list, ctr_epi_x_list, ctr_epi_y_list, ctr_RV_x_list,  ctr_RV_y_list  = postprocess_all_masks (segmentation_masks, [],[], pixel_spacing)
@@ -464,6 +476,30 @@ def segment_all_images (images, pixel_spacing):
        	write_overlaid_images_to_dir (segmentation_options['dirname_out'], sa_image, range(0,len(images)), range(0,len(images)),ctr_endo_x_list, ctr_endo_y_list, ctr_epi_x_list, ctr_epi_y_list, ctr_RV_x_list,  ctr_RV_y_list)
 
     return ctr_endo_x_list, ctr_endo_y_list, ctr_epi_x_list, ctr_epi_y_list, ctr_RV_x_list,  ctr_RV_y_list
+
+
+def segment_single_image (image, pixel_spacing, sa_slice_index, sa_phase_index, segmentation_model):
+    """ master function to segment all images in the list 'images' """
+
+    print("segmenting one image at a time")
+    image_in = np.squeeze(np.abs(image))
+    sa_image =[image_in]
+
+    print("preprocessing image")
+    processed_images = preprocess_images (sa_image, pixel_spacing)
+
+    print("segmenting image")
+    #segmentation_masks = segment_images (processed_images[0])
+    segmentation_mask=[segmentation_model.segment_image(processed_images[0])]
+
+    print("postprocessing images")
+    ctr_endo_x_list, ctr_endo_y_list, ctr_epi_x_list, ctr_epi_y_list, ctr_RV_x_list,  ctr_RV_y_list  = postprocess_all_masks (segmentation_mask, [],[], pixel_spacing)
+
+    print("writing images")
+    if segmentation_options['write_out_debug_images']: # change this if you want to output some pngs to give an idea of how the segmentation performs
+       	write_overlaid_images_to_dir (segmentation_options['dirname_out'], sa_image, [sa_slice_index], [sa_phase_index], ctr_endo_x_list, ctr_endo_y_list, ctr_epi_x_list, ctr_epi_y_list, ctr_RV_x_list,  ctr_RV_y_list)
+
+    return ctr_endo_x_list[0], ctr_endo_y_list[0], ctr_epi_x_list[0], ctr_epi_y_list[0], ctr_RV_x_list[0],  ctr_RV_y_list[0]
 
 
 

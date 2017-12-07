@@ -10,7 +10,7 @@ if not hasattr(sys, 'argv'):
     sys.argv  = ['']
 import tensorflow as tf
 import scipy as sp
-from segmentation_tools import segment_all_images, add_contours_to_headers
+from segmentation_tools import segment_single_image, add_contours_to_single_header, SegmentationModel
 
 class CineContouring(Gadget):
 
@@ -43,8 +43,7 @@ class CineContouring(Gadget):
 
         print("CineContouring, number of retro-gated phases ", self.phs_retro)
                                                                                         
-    def process(self, header, image, metadata=None):
-
+        def process(self, header, image, metadata=None):
         print("Receiving image__+_, phase ", header.phase, ", slice ", header.slice)
 
         # buffer incoming images
@@ -55,11 +54,17 @@ class CineContouring(Gadget):
 	sa_slice_index=header.slice
 	sa_phase_index=header.phase
 
-        if metadata is not None:
+	# instansiate tensorflow model to avoid delays in loading parameters later
+	if len(self.images)==1: 	# hard-code so that it's only called once
+	    self.segmentation_model = SegmentationModel()
+
+        ctr_endo_x, ctr_endo_y, ctr_epi_x, ctr_epi_y, _, _ = segment_single_image (image, pixel_spacing, sa_slice_index, sa_phase_index, self.segmentation_model)
+        
+	if metadata is not None:
             # deserialize metadata
 	    curr_meta = ismrmrd.Meta.deserialize(metadata)
+	    curr_meta = add_contours_to_single_header (curr_meta, ctr_endo_x, ctr_endo_y, ctr_epi_x, ctr_epi_y)
             self.metas.append(curr_meta)
-
 
         # if all images are received
         if header.slice<self.slc-1 or header.phase<self.phs_retro-1:
@@ -73,18 +78,7 @@ class CineContouring(Gadget):
         print("Sufficient images are received ... ")
         print(len(self.headers))
 
-	# call segmentation code -- do all at once for now. To do: do each slice individually and call the code as soon as the image 'comes in'
-	ctr_endo_x_list, ctr_endo_y_list, ctr_epi_x_list, ctr_epi_y_list, ctr_RV_x_list, ctr_RV_y_list = segment_all_images (self.images, pixel_spacing)
-
-	#write the contours to the meta data to allow export to ARGUS
-	self.metas= add_contours_to_headers (self.metas, ctr_endo_x_list, ctr_endo_x_list, ctr_epi_x_list, ctr_epi_x_list)
-
-	for i in range(0,len(self.metas)):
-            self.headers[i].image_series_index += 2000 
-	    self.put_next(self.headers[i],self.images[i],self.metas[i])
-
         return 0
-
 
 
 
