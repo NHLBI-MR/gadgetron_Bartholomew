@@ -45,7 +45,7 @@ class CineContouring(Gadget):
         print("CineContouring, number of retro-gated phases ", self.phs_retro)
                                                                                         
     def process(self, header, image, metadata=None):
-        print("Receiving image__+_, phase ", header.phase, ", slice ", header.slice)
+        print("Receiving image__+_, phase ", header.phase, ", slice ", header.slice, ', data size', image.shape)
 
         # buffer incoming images
         self.images.append(image)
@@ -62,8 +62,10 @@ class CineContouring(Gadget):
             end = time.time()
             print('CineContouring, loading model : ', end-start)
 
-        start = time.time()    
-        ctr_endo_x, ctr_endo_y, ctr_epi_x, ctr_epi_y, _, _ = segment_single_image (image, pixel_spacing, sa_slice_index, sa_phase_index, self.segmentation_model)
+        start = time.time()
+        # row-wise to column-wise
+        image_column_wise = np.transpose(image, (1,0,2,3))
+        ctr_endo_y, ctr_endo_x, ctr_epi_y, ctr_epi_x, _, _ = segment_single_image (image_column_wise, pixel_spacing, sa_slice_index, sa_phase_index, self.segmentation_model)
         end = time.time()
         print('Cine contouring, segment image : ', end-start)
         
