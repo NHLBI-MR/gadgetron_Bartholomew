@@ -87,6 +87,9 @@ class CineContouring(Gadget):
 	for i in range(0,len(self.metas)):
             self.headers[i].image_series_index += 2000 
 	    this_meta=self.metas[i]
+            if(this_meta.has_key('GADGETRON_ImageComment')):
+                image_comment = this_meta['GADGETRON_ImageComment']
+                image_comment.append('ENDO_EPI')
             self.put_next(self.headers[i],self.images[i],this_meta)
 
 
