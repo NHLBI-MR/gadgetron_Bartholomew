@@ -11,6 +11,7 @@ if not hasattr(sys, 'argv'):
 import tensorflow as tf
 import scipy as sp
 from segmentation_tools import segment_single_image, add_contours_to_single_header, SegmentationModel
+import time
 
 class CineContouring(Gadget):
 
@@ -56,9 +57,15 @@ class CineContouring(Gadget):
 
 	# instansiate tensorflow model to avoid delays in loading parameters later
 	if len(self.images)==1: 	# hard-code so that it's only called once
+            start = time.time()
 	    self.segmentation_model = SegmentationModel()
+            end = time.time()
+            print('CineContouring, loading model : ', end-start)
 
+        start = time.time()    
         ctr_endo_x, ctr_endo_y, ctr_epi_x, ctr_epi_y, _, _ = segment_single_image (image, pixel_spacing, sa_slice_index, sa_phase_index, self.segmentation_model)
+        end = time.time()
+        print('Cine contouring, segment image : ', end-start)
         
 	if metadata is not None:
             # deserialize metadata
@@ -74,18 +81,12 @@ class CineContouring(Gadget):
         # send out the last image
         self.put_next(header,image,curr_meta)
 
-	# send out copy of image without contour (will switch this to the front when I have more time)
+	# send out copy of image with contour
 	for i in range(0,len(self.metas)):
             self.headers[i].image_series_index += 2000 
 	    this_meta=self.metas[i]
-	    this_meta.pop('EPI')
-            this_meta.pop('ENDO')
             self.put_next(self.headers[i],self.images[i],this_meta)
 
-
-        # enough images received
-        print("Sufficient images are received ... ")
-        print(len(self.headers))
 
         return 0
 
