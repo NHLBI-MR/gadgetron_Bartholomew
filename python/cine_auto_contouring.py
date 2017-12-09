@@ -45,7 +45,8 @@ class CineContouring(Gadget):
                 self.phs_retro = ss[1]
 
         print("CineContouring, number of retro-gated phases ", self.phs_retro)
-
+        print("CineContouring, send_origin ", self.send_origin)
+        
         # instansiate tensorflow model to avoid delays in loading parameters later
         try:
             start = time.time()
@@ -66,7 +67,10 @@ class CineContouring(Gadget):
         try:
             start = time.time()
             # row-wise to column-wise
-            image_column_wise = np.transpose(image, (1,0,2,3))
+            if(len(image.shape)==4):
+                image_column_wise = np.transpose(image, (1,0,2,3))
+            else:
+                image_column_wise = np.transpose(image, (1,0))
             ctr_endo_y, ctr_endo_x, ctr_epi_y, ctr_epi_x, _, _ = segment_single_image (image_column_wise, pixel_spacing, sa_slice_index, sa_phase_index, self.segmentation_model)
             end = time.time()
             print('Cine contouring, segment image : ', end-start)
@@ -85,7 +89,7 @@ class CineContouring(Gadget):
 
         # if send original image
         try:
-            if self.send_original:
+            if self.send_origin:
                 self.put_next(header,image,curr_meta)
         except:
             print('CineContouring, send original image to downstream failed ... ')
@@ -98,6 +102,11 @@ class CineContouring(Gadget):
                 image_comment = updated_meta['GADGETRON_ImageComment']
                 image_comment.append('ENDO_EPI')
                 updated_meta['GADGETRON_ImageComment']=image_comment
+
+            if(updated_meta.has_key('GADGETRON_SeqDescription')):
+                seq_descrip = updated_meta['GADGETRON_SeqDescription']
+                seq_descrip.append('ENDO_EPI')
+                updated_meta['GADGETRON_SeqDescription']=seq_descrip
 
             self.put_next(header_sent,image_sent,updated_meta)
         except:
