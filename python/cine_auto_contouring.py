@@ -15,6 +15,18 @@ import time
 
 class CineContouring(Gadget):
 
+    def update_meta_fields(self, meta, key):
+        if(meta.has_key(key)):
+            if(isinstance(meta[key], list)):
+                meta[key].append('ENDO_EPI')
+
+            if(isinstance(meta[key], str)):
+                meta[key]=meta[key] + '_ENDO_EPI'
+        else:
+            meta[key]=['GT', 'ENDO_EPI']
+
+        return meta
+
     def process_config(self, cfg):
         print("Process config of cine contouring ... ")
 
@@ -95,19 +107,47 @@ class CineContouring(Gadget):
             print('CineContouring, send original image to downstream failed ... ')
             return 1
 
+        header_sent.image_series_index += 2050 
+
+        # modify meta fields
         try:
-            # send out copy of image with contour
-            header_sent.image_series_index += 2050 
-            if(updated_meta.has_key('GADGETRON_ImageComment')):
-                image_comment = updated_meta['GADGETRON_ImageComment']
-                image_comment.append('ENDO_EPI')
-                updated_meta['GADGETRON_ImageComment']=image_comment
+            self.update_meta_fields(updated_meta, 'GADGETRON_ImageComment')
+        except:
+            print('CineContouring, udpate meta ImageComment failed ... ')
 
-            if(updated_meta.has_key('GADGETRON_SeqDescription')):
-                seq_descrip = updated_meta['GADGETRON_SeqDescription']
-                seq_descrip.append('ENDO_EPI')
-                updated_meta['GADGETRON_SeqDescription']=seq_descrip
+        try:
+            self.update_meta_fields(updated_meta, 'GADGETRON_SeqDescription')
+        except:
+            print('CineContouring, udpate meta SeqDescription failed ... ')
 
+        '''
+        # ------------------------------------------
+        #if(updated_meta.has_key('GADGETRON_ImageComment')):
+        #    try:
+        #        updated_meta['GADGETRON_ImageComment'].append('ENDO_EPI')
+        #    except:
+                val = updated_meta['GADGETRON_ImageComment']
+                updated_meta['GADGETRON_ImageComment']=val+'_ENDO_EPI'
+        else:
+            updated_meta['GADGETRON_ImageComment']=['GT', 'ENDO_EPI']
+
+        #print(updated_meta['GADGETRON_ImageComment'])
+
+        if(updated_meta.has_key('GADGETRON_SeqDescription')):
+            try:
+                updated_meta['GADGETRON_SeqDescription'].append('ENDO_EPI')
+            except:
+                val = updated_meta['GADGETRON_SeqDescription']
+                updated_meta['GADGETRON_SeqDescription']=val+'_ENDO_EPI'
+        else:
+            updated_meta['GADGETRON_SeqDescription']=['GT', 'ENDO_EPI']
+
+        #print(updated_meta['GADGETRON_SeqDescription'])
+        '''
+
+        # send out copy of image with contour
+        # ------------------------------------------
+        try:
             self.put_next(header_sent,image_sent,updated_meta)
         except:
             print('CineContouring, send image with contours to downstream failed ... ')
