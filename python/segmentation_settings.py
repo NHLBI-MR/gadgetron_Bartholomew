@@ -1,7 +1,7 @@
 import os
 
 ### location of model files
-model_fname = os.environ["GADGETRON_HOME"]+"/share/gadgetron/python/FCN_sa"
+model_fname = os.environ["GADGETRON_HOME"]+"/share/gadgetron/python/optimised_graph.pb"
 ###
 
 ### whether the images are flipped (updisde-down and left-to-right) from the 'normal' orientation

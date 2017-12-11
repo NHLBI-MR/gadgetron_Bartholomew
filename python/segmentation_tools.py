@@ -7,6 +7,7 @@ from gadgetron import Gadget
 import copy 
 import math
 import cv2
+import time
 import os, sys
 if not hasattr(sys, 'argv'):
     sys.argv  = ['']
@@ -39,14 +40,22 @@ def preprocess_images (sa_image, pixel_size):
         processed_images.append(normalise_intensity(img2, (1,segmentation_options['intensity_percentile_to_saturate'])))
     return processed_images
 
-
 class SegmentationModel(object):
-
+  
   def __init__(self):
-    self.session = tf.Session()
-    weight_fn = segmentation_options['model_fname']
-    saver = tf.train.import_meta_graph(weight_fn+'.meta')
-    saver.restore(self.session, weight_fn)
+    start_time = time.time()
+    model_fname = segmentation_options['model_fname']
+    f = tf.gfile.GFile(model_fname, "rb")
+    graph_str = tf.GraphDef()
+    graph_str.ParseFromString(f.read())
+    with tf.Graph().as_default() as graph:
+        tf.import_graph_def(graph_str, name="var")
+    self.session  = tf.Session(graph=graph)
+    op_nodes = graph.get_tensor_by_name('var/pred:0')
+    self.op_nodes = op_nodes
+    end_time = time.time()
+    print("Time taken to load = "+str(end_time-start_time)+" secs")
+
 
   def segment_image(self, image):
     image=cv2.transpose(image)#146,194
@@ -61,8 +70,8 @@ class SegmentationModel(object):
     image = np.transpose(image, axes=(2, 0, 1)).astype(np.float32)#1,160,208
     image = np.expand_dims(image, axis=-1)#1,160,208,1
     
-    prob, pred = self.session.run(['prob:0', 'pred:0'],
-               feed_dict={'image:0': image, 'training:0': False})#1,160,208
+    pred = self.session.run(self.op_nodes,
+               feed_dict={'var/image:0': image, 'var/training:0': False})#1,160,208
     
     pred = np.transpose(pred, axes=(1, 2, 0))#160,208,1
     pred = pred[x_pre:x_pre + X, y_pre:y_pre + Y]
