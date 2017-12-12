@@ -78,12 +78,8 @@ class CineContouring(Gadget):
 
         try:
             start = time.time()
-            # row-wise to column-wise
-            if(len(image.shape)==4):
-                image_column_wise = np.transpose(image, (1,0,2,3))
-            else:
-                image_column_wise = np.transpose(image, (1,0))
-            ctr_endo_y, ctr_endo_x, ctr_epi_y, ctr_epi_x, _, _ = segment_single_image (image_column_wise, pixel_spacing, sa_slice_index, sa_phase_index, self.segmentation_model)
+            # incoming image must be column-wise which is required by segmenation module
+            ctr_endo_y, ctr_endo_x, ctr_epi_y, ctr_epi_x, _, _ = segment_single_image (image, pixel_spacing, sa_slice_index, sa_phase_index, self.segmentation_model)
             end = time.time()
             print('Cine contouring, segment image : ', end-start)
         except:
@@ -119,31 +115,6 @@ class CineContouring(Gadget):
             self.update_meta_fields(updated_meta, 'GADGETRON_SeqDescription')
         except:
             print('CineContouring, udpate meta SeqDescription failed ... ')
-
-        '''
-        # ------------------------------------------
-        #if(updated_meta.has_key('GADGETRON_ImageComment')):
-        #    try:
-        #        updated_meta['GADGETRON_ImageComment'].append('ENDO_EPI')
-        #    except:
-                val = updated_meta['GADGETRON_ImageComment']
-                updated_meta['GADGETRON_ImageComment']=val+'_ENDO_EPI'
-        else:
-            updated_meta['GADGETRON_ImageComment']=['GT', 'ENDO_EPI']
-
-        #print(updated_meta['GADGETRON_ImageComment'])
-
-        if(updated_meta.has_key('GADGETRON_SeqDescription')):
-            try:
-                updated_meta['GADGETRON_SeqDescription'].append('ENDO_EPI')
-            except:
-                val = updated_meta['GADGETRON_SeqDescription']
-                updated_meta['GADGETRON_SeqDescription']=val+'_ENDO_EPI'
-        else:
-            updated_meta['GADGETRON_SeqDescription']=['GT', 'ENDO_EPI']
-
-        #print(updated_meta['GADGETRON_SeqDescription'])
-        '''
 
         # send out copy of image with contour
         # ------------------------------------------
