@@ -16,7 +16,7 @@ import time
 class CineContouring(Gadget):
 
     def update_meta_fields(self, meta, key):
-        if(meta.has_key(key)):
+        if(key in meta):
             if(isinstance(meta[key], list)):
                 meta[key].append('ENDO_EPI')
 
