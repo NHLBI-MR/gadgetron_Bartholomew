@@ -33,8 +33,8 @@ def preprocess_images (sa_image, pixel_size):
     sz=pixel_size/1.8 
     processed_images=[]
     for i, img in enumerate(sa_image):
-	if segmentation_options['flipped_images']:
-	    img2 = np.flipud(np.fliplr(cv2.resize(img.copy(),(0,0),fx=sz,fy=sz)))
+        if segmentation_options['flipped_images']:
+            img2 = np.flipud(np.fliplr(cv2.resize(img.copy(),(0,0),fx=sz,fy=sz)))
         else:
             img2 = cv2.resize(img.copy(),(0,0),fx=sz,fy=sz)
         processed_images.append(normalise_intensity(img2, (1,segmentation_options['intensity_percentile_to_saturate'])))
@@ -467,8 +467,8 @@ def segment_all_images (images, pixel_spacing):
     print("segmenting "+str(len(images))+" images")
     sa_image =[]
     for img in images:
-    	image_in = np.squeeze(np.abs(img))
-	sa_image.append(image_in)
+        image_in = np.squeeze(np.abs(img))
+        sa_image.append(image_in)
 
     print("preprocessing images")
     processed_images = preprocess_images (sa_image, pixel_spacing)
