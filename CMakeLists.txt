@@ -223,14 +223,35 @@ LINK_DIRECTORIES(${GADGETRON_LIB_DIR})
 #    message("ISMRMRD not found")
 #endif()
 
-find_package(PythonLibs 2)
-string(REPLACE "." ";" PYTHON_VERSION_MAJOR ${PYTHONLIBS_VERSION_STRING})
-list(GET PYTHON_VERSION_MAJOR 0 PYVER)
-add_definitions(-DPYVER=${PYVER})
+option(BUILD_PYTHON_SUPPORT "Build Python gadgets etc" On)
 
-find_package(NumPy)
-if(NOT PYTHONLIBS_FOUND)
+if (BUILD_PYTHON_SUPPORT)
+
+  option(BUILD_WITH_PYTHON3 "Build with Python 3.x" On)
+
+
+  if (BUILD_WITH_PYTHON3)
+    find_package(Python3)
+  else()
+    find_package(PythonLibs 2)
+  endif ()
+
+  string(REPLACE "." ";" PYTHON_VERSION_MAJOR ${PYTHONLIBS_VERSION_STRING})
+  list(GET PYTHON_VERSION_MAJOR 0 PYVER)
+  add_definitions(-DPYVER=${PYVER})
+
+  find_package(NumPy)
+  if(NOT PYTHONLIBS_FOUND)
     message(STATUS "Python Libraries/Headers NOT found, NOT compiling Python Gadgets")
+    set(BUILD_PYTHON_SUPPORT OFF)
+  endif()
+  if(NOT NUMPY_FOUND)
+    message("NumPy NOT found, NOT compiling Python Gadgets")
+    set(BUILD_PYTHON_SUPPORT OFF)
+  else()
+    message("Found numpy : ${NUMPY_INCLUDE_DIRS} ${NUMPY_LIBRARIES}")
+  endif()
+
 endif()
 
 ###############################################################
